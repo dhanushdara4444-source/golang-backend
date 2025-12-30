@@ -6,7 +6,6 @@ env:
     AWS_ACCOUNT_ID: "012918245028"
     ECR_REPO: golang-backend
     CLUSTER_NAME: my-ecs-cluster
-    SERVICE_NAME: my-ecs-service
     CONTAINER_NAME: golang-container
 
 pre_build:
