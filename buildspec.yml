@@ -4,17 +4,16 @@ env:
   variables:
     AWS_DEFAULT_REGION: eu-west-2
     AWS_ACCOUNT_ID: "012918245028"
-    ECR_REPO: myapp
+    ECR_REPO: goland-backend
     CLUSTER_NAME: democlusterlondon
     SERVICE_NAME: my-taskdef-service-4q4hy87h
-    CONTAINER_NAME: my-container
+    CONTAINER_NAME: goland-backend
 
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION |
-        docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo Logging in to Amazon ECR
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
 
   build:
     commands:
@@ -22,12 +21,9 @@ phases:
       - docker build -t $ECR_REPO .
       - docker tag $ECR_REPO:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:latest
 
- post_build:
+  post_build:
     commands:
-      - echo Pushing image to ECR...
+      - echo Pushing image to ECR
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:latest
-      - echo Updating ECS service...
-      - aws ecs update-service \
-        --cluster $CLUSTER_NAME \
-        --service $SERVICE_NAME \
-        --force-new-deployment
+      - echo Updating ECS service
+      - aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
