@@ -23,6 +23,11 @@ phases:
       - docker tag $ECR_REPO:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:latest
 
  post_build:
-  commands:
-    - echo Updating ECS service...
-    - aws ecs update-service --cluster $democlusterlondon --service $my-taskdef-service-4q4hy87h--force-new-deployment
+    commands:
+      - echo Pushing image to ECR...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:latest
+      - echo Updating ECS service...
+      - aws ecs update-service \
+        --cluster $CLUSTER_NAME \
+        --service $SERVICE_NAME \
+        --force-new-deployment
