@@ -25,4 +25,4 @@ phases:
  post_build:
   commands:
     - echo Updating ECS service...
-    - aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
+    - aws ecs update-service --cluster $democlusterlondon --service $my-taskdef-service-4q4hy87h--force-new-deployment
