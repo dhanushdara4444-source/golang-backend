@@ -1,0 +1,58 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: eu-west-2
+    AWS_ACCOUNT_ID: "012918245028"
+    ECR_REPO: "myapp"
+    CLUSTER_NAME: "democlusterlondon"
+    SERVICE_NAME: "my-ecs-service"
+    CONTAINER_NAME: "myapp"
+
+phases:
+  pre_build:
+    commands:
+      - echo "Login to ECR"
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO
+      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+      - IMAGE_URI=$REPO_URI:$IMAGE_TAG
+      - echo "IMAGE_URI=$IMAGE_URI"
+
+  build:
+    commands:
+      - echo "Build Docker image"
+      - docker build -t $IMAGE_URI .
+
+  post_build:
+    commands:
+      - echo "Push Docker image"
+      - docker push $IMAGE_URI
+
+      - echo "Get current task definition used by the service"
+      - TASK_DEF_ARN=$(aws ecs describe-services --cluster $CLUSTER_NAME --services $SERVICE_NAME --query "services[0].taskDefinition" --output text)
+      - aws ecs describe-task-definition --task-definition $TASK_DEF_ARN --query taskDefinition > taskdef.json
+
+      - echo "Create new task definition revision with updated image"
+      - |
+        cat taskdef.json | python3 -c '
+import json,sys
+td=json.load(sys.stdin)
+
+# remove read-only fields
+for k in ["taskDefinitionArn","revision","status","requiresAttributes","compatibilities","registeredAt","registeredBy"]:
+    td.pop(k,None)
+
+# update container image
+for c in td["containerDefinitions"]:
+    if c["name"]=="'"$CONTAINER_NAME"'":
+        c["image"]="'"$IMAGE_URI"'"
+
+print(json.dumps(td))
+' > new-taskdef.json
+
+      - echo "Register new task definition"
+      - NEW_TD_ARN=$(aws ecs register-task-definition --cli-input-json file://new-taskdef.json --query "taskDefinition.taskDefinitionArn" --output text)
+
+      - echo "Update ECS service to use new task definition (triggers rolling deployment)"
+      - aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition $NEW_TD_ARN
