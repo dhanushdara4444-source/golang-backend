@@ -4,26 +4,29 @@ env:
   variables:
     AWS_DEFAULT_REGION: eu-west-2
     AWS_ACCOUNT_ID: "012918245028"
-    ECR_REPO: golang-backend
-    CLUSTER_NAME: my-ecs-cluster
-    CONTAINER_NAME: golang-container
+    ECR_REPO: goland-backend
+    CLUSTER_NAME: democlusterlondon
+    SERVICE_NAME: my-taskdef-service-4q4hy87h
+    CONTAINER_NAME: my-container
 
-pre_build:
-  commands:
-    - echo "Login to Amazon ECR"
-    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $012918245028dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $eu-west-2 |
+        docker login --username AWS --password-stdin $012918245028.dkr.ecr.$eu-west-2.amazonaws.com
 
   build:
     commands:
-      - echo Build started
+      - echo Build started on `date`
       - docker build -t $ECR_REPO .
-      - docker tag $ECR_REPO:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:latest
+      - docker tag $ECR_REPO:latest $012918245028.dkr.ecr.$eu-west-2.amazonaws.com/$ECR_REPO:latest
 
   post_build:
     commands:
-      - echo Pushing image to ECR
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO:latest
-      - echo Updating ECS service
+      - echo Pushing image to ECR...
+      - docker push $012918245028.dkr.ecr.$eu-west-2.amazonaws.com/$ECR_REPO:latest
+      - echo Updating ECS service...
       - aws ecs update-service \
         --cluster $CLUSTER_NAME \
         --service $SERVICE_NAME \
