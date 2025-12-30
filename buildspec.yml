@@ -9,12 +9,10 @@ env:
     SERVICE_NAME: my-ecs-service
     CONTAINER_NAME: golang-container
 
-phases:
-  pre_build:
-    commands:
-      - echo Logging in to Amazon ECR
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION |
-        aws ecr get-login-password --region YOUR_REGION | docker login --username AWS --password-stdin 012918245028.dkr.ecr.YOUR_REGION.amazonaws.com 
+pre_build:
+  commands:
+    - echo "Login to Amazon ECR"
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $012918245028dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
 
   build:
     commands:
